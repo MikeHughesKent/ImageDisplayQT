@@ -124,7 +124,7 @@ class ImageDisplay(QLabel):
            self.dragY = self.mouseY
            self.dragToX = self.dragX
            self.dragToY = self.dragY
-       elif event.buttons() == QtCore.Qt.MidButton:
+       elif event.buttons() == QtCore.Qt.MidButton or event.buttons() == QtCore.Qt.RightButton:
            self.panning = True
            self.panningX, self.panningY = (self.mouseX, self.mouseY)
        
@@ -157,6 +157,7 @@ class ImageDisplay(QLabel):
        self.imageSize = np.shape(img)
        
        if img is not None and np.size(img) > 0:
+           img = img.astype('float')
            
            if self.autoScale and np.max(img) != 0:
                img = img - np.min(img)
@@ -510,7 +511,7 @@ class ImageDisplay(QLabel):
            colormap = cm.get_cmap(colormapName) 
            colormap._init()
            lut = (colormap._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0 -255 for Qt
-           lut = lut[:,0:3]
+           lut = lut[:256,0:3]
            nCols = np.shape(lut)[0]   # Seem to be 513 x 4
                
            self.colortable = []

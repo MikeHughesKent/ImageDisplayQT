@@ -117,6 +117,9 @@ class ImageDisplayExample(QMainWindow):
         self.autoscaleCheck = QCheckBox('Autoscale')
         self.controlsLayout.addWidget(self.autoscaleCheck)
         self.autoscaleCheck.stateChanged.connect(self.update_display_settings)
+        self.cmapCheck = QCheckBox('RGB colormap')
+        self.controlsLayout.addWidget(self.cmapCheck)
+        self.cmapCheck.stateChanged.connect(self.update_display_settings)
        
         self.controlsLayout.addStretch()
         
@@ -160,11 +163,16 @@ class ImageDisplayExample(QMainWindow):
         self.mainDisplay.set_roi_enabled(self.allowROICheck.isChecked())
         self.mainDisplay.set_auto_scale(self.autoscaleCheck.isChecked())
 
+        if self.cmapCheck.isChecked():
+            self.mainDisplay.set_colormap('hsv')
+        else:   
+            self.mainDisplay.set_colormap('gray')
+
         
         # Overlays
         self.mainDisplay.clear_overlays()
         if self.showLineCheck.isChecked():
-            lineOverlay = self.mainDisplay.add_overlay(ImageDisplay.LINE, 140, 70, 230, 420, QPen(Qt.red, 2, Qt.SolidLine))
+            lineOverlay = self.mainDisplay.add_overlay(ImageDisplay.LINE, 140, 70, 130, 120, QPen(Qt.red, 2, Qt.SolidLine))
         if self.showRectangleCheck.isChecked():
             rectOverlay = self.mainDisplay.add_overlay(ImageDisplay.RECTANGLE, 90, 100, 30, 40, QPen(Qt.blue, 2, Qt.SolidLine), None)
         if self.showEllipseCheck.isChecked():
