@@ -39,7 +39,7 @@ Toggle the status bar visibility using:
 imDisplay.set_status_bar(True/False)
 ```
 
-Toggle the zoom facility using the mouth scroll wheel (or pinch zoom):
+Toggle the zoom facility using the mouse scroll wheel (or pinch zoom):
 
 ```
 imDisplay.set_zoom_enabled(True/False)
