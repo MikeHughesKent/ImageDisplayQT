@@ -225,7 +225,7 @@ class ImageDisplay(QLabel):
 
         
    def resizeEvent(self, new):
-       """ redraw if resized """
+       """ Redraw if resized """
        self.set_mono_image(self.currentImage)
        
       
