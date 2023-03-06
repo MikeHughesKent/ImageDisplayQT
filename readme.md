@@ -5,7 +5,7 @@ pixel inspection, autoscaling, region of interest with live mean display, and th
 It is lightweight and simple to use, requiring 
 only a few lines of code to be added to your GUI. It can display images at video rate on modest hardware.
 
-It currently only supports monochrome images, support for colour images and eventually stacks is planned in future.
+It supports monochrome and colour (RGB) images, support for stacks is planned in future.
 
 Full documentation and pip install will be available soon.
 
