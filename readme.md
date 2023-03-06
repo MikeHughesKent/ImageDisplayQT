@@ -28,10 +28,10 @@ and then add this widget to your GUI.
 
 To update the image, call:
 ```
-imDisplay.set_mono_image(img)
+imDisplay.set_image(img)
 ```
 
-where `img` is a 2D numpy array containing the image.
+ where `img` is a 2D numpy array containing a monochrome image or a 3D numpy array containing a colour (RGB) image.
 
 Toggle the status bar visibility using:
 
