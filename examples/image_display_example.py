@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Example QT GUI Showing use of ImageDisplay Widget.
+Example QT GUI Showing use of ImageDisplayQT Widget.
 
 @author: Mike Hughes
 Applied Optics Group
 University of Kent
+
+Test videos by Antonio Guillén, https://www.youtube.com/watch?v=oxbhASDZeyk (Creative Commons by Attribution)
 
 """
 
@@ -27,7 +29,7 @@ from image_display import ImageDisplay
 
 class ImageDisplayExample(QMainWindow):
     
-    authorName = "AOG"
+    authorName = "MikeHughes"
     appName = "ImageDisplayExample"
     
     # Images to display
@@ -35,7 +37,7 @@ class ImageDisplayExample(QMainWindow):
     colourImageSource = "example_rgb.tif"
     
     # Will try to load this number of images
-    numImagesToLoad = 1
+    numImagesToLoad = 10
          
     # Gui display defaults
     imageDisplaySize = 300
@@ -43,7 +45,6 @@ class ImageDisplayExample(QMainWindow):
     
     # Timer interval defualts (ms)
     GUIupdateInterval = 50
-    imagesUpdateInterval = 1
         
     currentImage = None
     imageBuffer = None
@@ -91,8 +92,7 @@ class ImageDisplayExample(QMainWindow):
         self.layout.addLayout(self.mainDisplayLayout)
         
         # Create the panel with controls
-        self.controlsLayout = QVBoxLayout() 
-        
+        self.controlsLayout = QVBoxLayout()         
         
         self.optionsGroup = QGroupBox("Image Display Options")
         self.controlsLayout.addWidget(self.optionsGroup)
@@ -143,8 +143,11 @@ class ImageDisplayExample(QMainWindow):
         self.showTextCheck = QCheckBox('Show text overlay')
         self.overlaysLayout .addWidget(self.showTextCheck)
         self.showTextCheck.stateChanged.connect(self.update_display_settings)        
-       
+
         self.controlsLayout.addStretch()        
+        
+        self.controlsLayout.addWidget(label:=QLabel("Image by Antonio Guillen"))
+       
         self.layout.addLayout(self.controlsLayout)           
         app = QWidget()
         app.setLayout(self.layout)

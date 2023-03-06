@@ -249,7 +249,7 @@ class ImageDisplay(QLabel):
                 self.zoomLevel = round(np.log2(max(shape)/4))
             zoomShape = max(np.round(shape / (2**self.zoomLevel)))
             
-            self.displayW = int(zoomShape)
+            self.displayW = int(zoomShape) 
             self.displayH = int(zoomShape)    
             
             
