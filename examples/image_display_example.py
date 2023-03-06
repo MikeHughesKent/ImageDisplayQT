@@ -31,10 +31,11 @@ class ImageDisplayExample(QMainWindow):
     appName = "ImageDisplayExample"
     
     # Images to display
-    imageSource = "example_mono8.tif"
+    monoImageSource = "example_mono8.tif"
+    colourImageSource = "example_rgb.tif"
     
-    # Will loop through this number of images
-    numImages = 10        
+    # Will try to load this number of images
+    numImagesToLoad = 1
          
     # Gui display defaults
     imageDisplaySize = 300
@@ -59,7 +60,7 @@ class ImageDisplayExample(QMainWindow):
 
         # Load in a stack of test images to simulated a live feed. Use a timer
         # to move through the stack, updating the image display
-        self.imageBuffer = self.load_images(self.imageSource, self.numImages)
+        self.update_image_input()
         self.GUITimer=QTimer()
         self.GUITimer.timeout.connect(self.handle_images)
         self.GUITimer.start(self.GUIupdateInterval)
@@ -79,6 +80,7 @@ class ImageDisplayExample(QMainWindow):
         self.setWindowTitle('Image Display Example')       
 
         self.layout = QHBoxLayout()
+        self.layout.setSpacing(20) 
         self.mainDisplayLayout = QVBoxLayout()      
         
         # Create the ImageDisplay widget 
@@ -89,42 +91,61 @@ class ImageDisplayExample(QMainWindow):
         self.layout.addLayout(self.mainDisplayLayout)
         
         # Create the panel with controls
-        self.controlsLayout = QVBoxLayout()        
+        self.controlsLayout = QVBoxLayout() 
+        
+        
+        self.optionsGroup = QGroupBox("Image Display Options")
+        self.controlsLayout.addWidget(self.optionsGroup)
+        self.optionsLayout = QVBoxLayout()
+        self.optionsGroup.setLayout(self.optionsLayout)
+        
+        self.useColourCheck = QCheckBox('Use colour images')
+        self.optionsLayout.addWidget(self.useColourCheck)
+        self.useColourCheck.stateChanged.connect(self.update_image_input)          
+        
+        self.showStatusCheck = QCheckBox('Show status bar')
+        self.optionsLayout.addWidget(self.showStatusCheck)
+        self.showStatusCheck.stateChanged.connect(self.update_display_settings)        
+        
+        self.allowZoomCheck = QCheckBox('Allow zoom')
+        self.optionsLayout.addWidget(self.allowZoomCheck)
+        self.allowZoomCheck.stateChanged.connect(self.update_display_settings)        
+        
+        self.allowROICheck = QCheckBox('Allow ROI')
+        self.optionsLayout.addWidget(self.allowROICheck)
+        self.allowROICheck.stateChanged.connect(self.update_display_settings)
+        
+        self.autoscaleCheck = QCheckBox('Autoscale')
+        self.optionsLayout.addWidget(self.autoscaleCheck)
+        self.autoscaleCheck.stateChanged.connect(self.update_display_settings)
+        
+        self.cmapCheck = QCheckBox('RGB colormap (Mono Images)')
+        self.optionsLayout.addWidget(self.cmapCheck)
+        self.cmapCheck.stateChanged.connect(self.update_display_settings)
+        
+        self.overlayGroup = QGroupBox("Overlays")
+        self.controlsLayout.addWidget(self.overlayGroup)
+        self.overlaysLayout = QVBoxLayout()
+        self.overlayGroup.setLayout(self.overlaysLayout )
+
         self.showRectangleCheck = QCheckBox('Show rectangular overlay')
-        self.controlsLayout.addWidget(self.showRectangleCheck)
+        self.overlaysLayout.addWidget(self.showRectangleCheck)
         self.showRectangleCheck.stateChanged.connect(self.update_display_settings)        
         self.showEllipseCheck = QCheckBox('Show Ellipse overlay')
-        self.controlsLayout.addWidget(self.showEllipseCheck)
+        self.overlaysLayout.addWidget(self.showEllipseCheck)
         self.showEllipseCheck.stateChanged.connect(self.update_display_settings)        
         self.showLineCheck = QCheckBox('Show line overlay')
-        self.controlsLayout.addWidget(self.showLineCheck)
+        self.overlaysLayout .addWidget(self.showLineCheck)
         self.showLineCheck.stateChanged.connect(self.update_display_settings)        
         self.showPointsCheck = QCheckBox('Show point overlays')
-        self.controlsLayout.addWidget(self.showPointsCheck)
+        self.overlaysLayout .addWidget(self.showPointsCheck)
         self.showPointsCheck.stateChanged.connect(self.update_display_settings)        
         self.showTextCheck = QCheckBox('Show text overlay')
-        self.controlsLayout.addWidget(self.showTextCheck)
+        self.overlaysLayout .addWidget(self.showTextCheck)
         self.showTextCheck.stateChanged.connect(self.update_display_settings)        
-        self.showStatusCheck = QCheckBox('Show status bar')
-        self.controlsLayout.addWidget(self.showStatusCheck)
-        self.showStatusCheck.stateChanged.connect(self.update_display_settings)        
-        self.allowZoomCheck = QCheckBox('Allow zoom')
-        self.controlsLayout.addWidget(self.allowZoomCheck)
-        self.allowZoomCheck.stateChanged.connect(self.update_display_settings)        
-        self.allowROICheck = QCheckBox('Allow ROI')
-        self.controlsLayout.addWidget(self.allowROICheck)
-        self.allowROICheck.stateChanged.connect(self.update_display_settings)
-        self.autoscaleCheck = QCheckBox('Autoscale')
-        self.controlsLayout.addWidget(self.autoscaleCheck)
-        self.autoscaleCheck.stateChanged.connect(self.update_display_settings)
-        self.cmapCheck = QCheckBox('RGB colormap')
-        self.controlsLayout.addWidget(self.cmapCheck)
-        self.cmapCheck.stateChanged.connect(self.update_display_settings)
        
-        self.controlsLayout.addStretch()
-        
-        self.layout.addLayout(self.controlsLayout)   
-        
+        self.controlsLayout.addStretch()        
+        self.layout.addLayout(self.controlsLayout)           
         app = QWidget()
         app.setLayout(self.layout)
 
@@ -133,17 +154,41 @@ class ImageDisplayExample(QMainWindow):
         self.setCentralWidget(app)
         
         
-    def load_images(self, filename, numToLoad ):
+    def update_image_input(self):
+        """ Depending on whether loading colour or mono images, load the correct
+        images from a file 
+        """
+                
+        if self.useColourCheck.isChecked():
+            filename = self.colourImageSource
+        else:
+            filename = self.monoImageSource 
+        
+        self.imageBuffer = self.load_images(filename, self.numImagesToLoad)
+        self.numLoadedImages = np.shape(self.imageBuffer)[3]
+        
+        
+    def load_images(self, filename, numToLoad):
         """ Loads a stack of images into memmory from tif.
         """            
         dataset = Image.open(filename)
         h = np.shape(dataset)[0]
-        w = np.shape(dataset)[1]    
-        imageBuffer = np.zeros((h,w,dataset.n_frames))
+        w = np.shape(dataset)[1]  
+        if np.shape(np.shape(dataset))[0] == 3:
+            c = np.shape(dataset)[2] 
+        else:
+            c = 1
+        nLoad = min(numToLoad, dataset.n_frames)
+
+        imageBuffer = np.zeros((h,w,c, nLoad))
         
-        for i in range(min(dataset.n_frames, numToLoad)):
+        for i in range(min(dataset.n_frames, nLoad)):
             dataset.seek(i)
-            imageBuffer[:,:,i] = np.array(dataset).astype('double')
+            if c > 1:
+                imageBuffer[:,:,:,i] = np.array(dataset).astype('double')
+            else:
+                imageBuffer[:,:,0,i] = np.array(dataset).astype('double')
+
         dataset.close() 
 
         return imageBuffer
@@ -152,7 +197,7 @@ class ImageDisplayExample(QMainWindow):
     def update_gui(self):
         """ Updates the image display by setting the current image of the ImageDisplay widget
         """
-        self.mainDisplay.set_mono_image(self.currentImage)
+        self.mainDisplay.set_image(self.currentImage)
         
 
     def update_display_settings(self):
@@ -192,8 +237,8 @@ class ImageDisplayExample(QMainWindow):
         
         # Grab the next image from the buffer
         self.currentImageNum = self.currentImageNum + 1
-        self.currentImageNum = np.remainder(self.currentImageNum, self.numImages)
-        self.currentImage = self.imageBuffer[:,:,self.currentImageNum]
+        self.currentImageNum = np.remainder(self.currentImageNum, self.numLoadedImages)
+        self.currentImage = np.squeeze(self.imageBuffer[:,:,:,self.currentImageNum])
                 
         self.update_gui()
     
