@@ -13,9 +13,9 @@ and then add this widget to your GUI, eg. using ``addWidget``.
 
 To update the image display, call::
 
-    imDisplay.set_mono_image(img)
+    imDisplay.set_image(img)
 
-where ``img`` is a 2D numpy array containing the image.
+where ``img`` is either a 2D numpy array containing a monochrome image or a 3D numpy array containing a colour image with the third dimensions containing the red, green and blue channels.
 
 Toggle the status bar visibility using ``set_status_bar``, for example::
 
@@ -39,7 +39,7 @@ You can choose whether or not the image intensity is autoscaled to use the full 
 
     imDisplay.autoscale_enabled(True)
     
-Images are always displayed as 8bit images. If autoscale is set to ``True`` then the smallest and largest image pixel values will be mapped to 0 and 255 respectively. 
+Images are always displayed as 8bit images. If autoscale is set to ``True`` then the smallest and largest image pixel values will be mapped to 0 and 255 respectively. For colour images, all three channels are scaled in the same way.
 
 If autoscale is set to ``False`` then no mapping will occur by default, the input image will simply be cast to an 8 bit unsigned image. This can be changed using ``set_display_range``::
 
