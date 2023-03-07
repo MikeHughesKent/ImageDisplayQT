@@ -55,7 +55,6 @@ class ImageDisplayExample(QMainWindow):
     def __init__(self,parent=None):    
         
         super(ImageDisplayExample, self).__init__(parent)
-
         self.create_layout() 
         self.update_display_settings()
 

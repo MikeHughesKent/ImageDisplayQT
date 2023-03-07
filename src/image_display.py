@@ -85,8 +85,7 @@ class ImageDisplay(QLabel):
        self.name = kwargs.get('name', 'noname')
        
        super().__init__()
-       
-     
+
        self.setMouseTracking(True)
        self.setCursor(Qt.CrossCursor)    
        self.mouseX = 0
@@ -537,12 +536,12 @@ class ImageDisplay(QLabel):
     
                text = text + ' | [Dragging ROI: (' + str(dragRoi[0]) + ',' + str(dragRoi[1] ) + ')-(' + str(dragRoi[2] -1) + '-' + str(dragRoi[3] -1) + ') ]'
 
-           xPos = (self.width() - self.pmap.width()) /2
+           xPos = int(round((self.width() - self.pmap.width()) /2))
            painter.setBrush(self.statusBrush)
            painter.setPen(self.statusPen)
-           painter.drawRect(xPos + 1, self.height() - fm.height() - 5, self.pmap.width() - 2, fm.height() + 4)
+           painter.drawRect(int(xPos + 1), int(self.height() - fm.height() - 5), int(self.pmap.width() - 2), int(fm.height() + 4))
            painter.setPen(self.statusTextPen)
-           painter.drawText(xPos + 10, self.height() - 6, text)
+           painter.drawText(int(xPos + 10), int(self.height() - 6), text)
           
         
         
