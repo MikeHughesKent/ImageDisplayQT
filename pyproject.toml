@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ImageDisplayQT"
-version = "1.0.3"
+version = "1.0.4"
 description = "A widget for real time image display in PyQT GUIs."
 readme = "README.md"
 authors = [{ name = "Michael Hughes", email = "m.r.hughes@kent.ac.uk" }]

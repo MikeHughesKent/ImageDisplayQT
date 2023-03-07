@@ -466,7 +466,7 @@ class ImageDisplay(QLabel):
            h = self.imageSize[0] / self.imageSize[1] * w
            
            # Outer rect
-           painter.drawRect(x, y, w, h) 
+           painter.drawRect(int(x), int(y), int(w), int(h)) 
            
            # Filled inner rect
            x2 = round(self.displayX / self.imageSize[1] * (w- 2))
@@ -476,7 +476,7 @@ class ImageDisplay(QLabel):
            w2 = min(w - x2, w2 - x2) + x2
            h2 = min(h - y2, h2 - y2) + y2
            painter.setBrush(self.zoomIndicatorBrush)
-           painter.drawRect(x + x2, y + y2, w2, h2)  
+           painter.drawRect(int(x + x2), int(y + y2), int(w2), int(h2))  
 
 
 
