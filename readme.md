@@ -9,6 +9,8 @@ It supports monochrome and colour (RGB) images, support for stacks is planned in
 
 [Full documentation is available](https://imagedisplayqt.readthedocs.io/).
 
+You can see the widget's appearance on [Youtube](https://www.youtube.com/watch?v=Yak7tegc_DI).
+
 Pip install will be available soon.
 
 It is developed mainly by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes) 
