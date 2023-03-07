@@ -86,6 +86,7 @@ class ImageDisplay(QLabel):
        
        super().__init__()
        
+     
        self.setMouseTracking(True)
        self.setCursor(Qt.CrossCursor)    
        self.mouseX = 0
@@ -360,14 +361,14 @@ class ImageDisplay(QLabel):
            xOffset, yOffset = self.screen_offsets()
            imageX = round( (x - xOffset) / (self.pmap.width()) * np.shape(self.displayImage)[1] + self.displayX)
            imageY = round( (y - yOffset) / (self.pmap.height()) * np.shape(self.displayImage)[0] + self.displayY)
-           return imageX, imageY
+           return int(imageX), int(imageY)
        
   
    def screen_offsets(self):  
            """ Returns the x and y co-ordinates of the top left of the image relative to Widget"""
            xOffset = (self.width() - self.pmap.width())/ 2 
            yOffset = (self.height() - self.pmap.height())/ 2 
-           return xOffset, yOffset
+           return int(xOffset), int(yOffset)
        
        
    def screen_size(self):  
@@ -379,7 +380,7 @@ class ImageDisplay(QLabel):
            """ Convert image dimensions to screen dimensions """
            screenX = round(x * (self.pmap.width()) / np.shape(self.displayImage)[1])
            screenY = round(y * (self.pmap.height()) / np.shape(self.displayImage)[0])               
-           return screenX, screenY
+           return int(screenX), int(screenY)
        
         
    def paintEvent(self, event):
@@ -663,13 +664,13 @@ class ImageDisplay(QLabel):
        else:   
            colormap = cm.get_cmap(colormapName) 
            colormap._init()
-           lut = (colormap._lut * 255).view(np.ndarray)  # Convert matplotlib colormap from 0-1 to 0 -255 for Qt
+           lut = (colormap._lut * 255).view(np.ndarray).astype('int16')  # Convert matplotlib colormap from 0-1 to 0 -255 for Qt
            lut = lut[:256,0:3]
            nCols = np.shape(lut)[0]   # Seem to be 513 x 4
                
            self.colortable = []
            for i in range(0, 256):
-               col = round(i * nCols / 256)
+               col = int(round(i * nCols / 256))
                self.colortable.append(QtGui.qRgb(lut[col,0],lut[col,1],lut[col,2]))
        self.update()
        
