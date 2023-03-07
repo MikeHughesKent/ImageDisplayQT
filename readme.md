@@ -11,9 +11,9 @@ It supports monochrome and colour (RGB) images, support for stacks is planned in
 
 You can see the widget's appearance on [Youtube](https://www.youtube.com/watch?v=Yak7tegc_DI).
 
-Pip install will be available soon.
+You can ``pip install ImageDisplayQT`` for the latest stable version.
 
-It is developed mainly by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes) 
+The widget is developed mainly by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes) 
 at the [Applied Optics Group](https://research.kent.ac.uk/applied-optics/), School of Physics and Astronomy, University of Kent. 
 
 The widget was originally developed for our in-house microscopy and imaging systems and will evolve with our requirements. Bug reports, contributions and pull requests are welcome.
