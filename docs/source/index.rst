@@ -22,6 +22,7 @@ Contents
    getting_started
    example
    overlays
+   customisation
    
 * :ref:`genindex`
 

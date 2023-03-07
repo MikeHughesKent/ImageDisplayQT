@@ -240,7 +240,11 @@ class ImageDisplayExample(QMainWindow):
         #### Examples of other options
         # self.mainDisplay.set_zoom_indicator_enabled(False)
         # self.mainDisplay.set_zoom_step_divider(3)
-        
+        # self.mainDisplay.statusPen = QPen(Qt.blue, 1, Qt.SolidLine)
+        # self.mainDisplay.statusBrush = QBrush(Qt.black, Qt.SolidPattern)
+        # self.mainDisplay.statusTextPen = QPen(Qt.white)
+
+
     
     def handle_images(self):
         """ Called regularly by a timer to deal with input images. If a processor

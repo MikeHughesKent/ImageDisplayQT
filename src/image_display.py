@@ -37,7 +37,7 @@ class ImageDisplay(QLabel):
 
    imageSize = (0,0)
    
-   isStatusBar = False
+   isStatusBar = True
    autoScale = True
    enableZoom = True
    isRoiEnabled = True
@@ -66,6 +66,10 @@ class ImageDisplay(QLabel):
    roiDragPen = QPen(Qt.red, 2, Qt.DotLine)
    roiContrastPen = QPen(Qt.white, 2, Qt.SolidLine)
    roiPen = QPen(Qt.green, 2, Qt.DotLine)
+   
+   statusPen =  QPen(Qt.white, 2, Qt.SolidLine)
+   statusBrush = QBrush(Qt.white, Qt.SolidPattern)
+   statusTextPen = QPen(Qt.black, 2, Qt.SolidLine)
    
    imageMode = MONO
    
@@ -420,16 +424,14 @@ class ImageDisplay(QLabel):
        ##################### Draw dragging ROI    
        if self.dragging and self.dragX != self.dragToX and self.dragY != self.dragToY:
            painter.setPen(QPen(Qt.red, 2, Qt.SolidLine))
-           #startX, startY = self.screen_coords(self.dragX, self.dragY)
-           #endX, endY = self.screen_coords(self.dragToX, self.dragToY)
+          
            dragRoi = int(round(min(self.dragX, self.dragToX))), int(round(min(self.dragY, self.dragToY))), int(round(max(self.dragX, self.dragToX))), int(round(max(self.dragY, self.dragToY)))
 
-          # if startX is not None and startY is not None and endX is not None and endY is not None:
-               #painter.drawRect(startX, startY, endX - startX, endY - startY )
            drawX, drawY = self.screen_coords(dragRoi[0], dragRoi[1])
            endX, endY = self.screen_coords(dragRoi[2], dragRoi[3])
            width = endX- drawX
            height = endY - drawY
+
            painter.setPen(self.roiDragContrastPen)
            painter.drawRect(drawX, drawY, width + 1, height + 1)
            painter.setPen(self.roiDragPen)
@@ -472,9 +474,7 @@ class ImageDisplay(QLabel):
            w2 = round(self.displayW / self.imageSize[1] * (w - 2) + 1)
            h2 = round(self.displayH / self.imageSize[0] * (h - 2) + 1)
            w2 = min(w - x2, w2 - x2) + x2
-
            h2 = min(h - y2, h2 - y2) + y2
-           
            painter.setBrush(self.zoomIndicatorBrush)
            painter.drawRect(x + x2, y + y2, w2, h2)  
 
@@ -537,13 +537,13 @@ class ImageDisplay(QLabel):
                text = text + ' | [Dragging ROI: (' + str(dragRoi[0]) + ',' + str(dragRoi[1] ) + ')-(' + str(dragRoi[2] -1) + '-' + str(dragRoi[3] -1) + ') ]'
 
            xPos = (self.width() - self.pmap.width()) /2
-           painter.setBrush(QBrush(Qt.white, Qt.SolidPattern))
-           painter.setPen(QPen(Qt.white, 2, Qt.SolidLine))
-           painter.drawRect(xPos + 1, self.height() - fm.height() - 5, self.pmap.width() - 2, self.pmap.height())
-           painter.setPen(QPen(Qt.black, 2, Qt.SolidLine))
-           painter.drawText(xPos + 10, self.height() - 5, text)
+           painter.setBrush(self.statusBrush)
+           painter.setPen(self.statusPen)
+           painter.drawRect(xPos + 1, self.height() - fm.height() - 5, self.pmap.width() - 2, fm.height() + 4)
+           painter.setPen(self.statusTextPen)
+           painter.drawText(xPos + 10, self.height() - 6, text)
           
-           
+        
         
    def add_overlay(self, overlayType, *args):
        """ Adds an overlay to the list of visible overlays. overlayType can be ELLIPSE, RECTANGLE, POINT or LINE.
