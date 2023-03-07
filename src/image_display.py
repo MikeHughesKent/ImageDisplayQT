@@ -20,6 +20,7 @@ from PyQt5.QtGui import QPainter, QBrush, QPen, QFont, QFontMetrics
 
 import numpy as np
 from matplotlib import cm
+import math
 
 class ImageDisplay(QLabel):
     
@@ -28,6 +29,9 @@ class ImageDisplay(QLabel):
    POINT = 2
    RECTANGLE = 3
    TEXT = 4
+  
+   MONO = 0
+   RGB = 1
     
    mouseMoved = pyqtSignal(int, int)
 
@@ -38,6 +42,7 @@ class ImageDisplay(QLabel):
    enableZoom = True
    isRoiEnabled = True
    isZoomEnabled = True
+   isZoomIndicator = True
    
    panning = False
    zoomLocation = None
@@ -49,18 +54,27 @@ class ImageDisplay(QLabel):
    displayMin = 0
    displayMax = 255
    zoomLevel = 0
+   zoomStepDivider = 2   
+    
+   zoomIndicatorPen = QPen(Qt.white, 1, Qt.SolidLine)
+   zoomIndicatorBrush = QBrush(Qt.white, Qt.SolidPattern)
+   zoomIndicatorWidth = 60
+   zoomIndicatorOffsetX = 20
+   zoomIndicatorOffsetY = 20
    
-   MONO = 0
-   RGB = 1
+   roiDragContrastPen = QPen(Qt.white, 2, Qt.SolidLine)
+   roiDragPen = QPen(Qt.red, 2, Qt.DotLine)
+   roiContrastPen = QPen(Qt.white, 2, Qt.SolidLine)
+   roiPen = QPen(Qt.green, 2, Qt.DotLine)
    
    imageMode = MONO
    
    overlays = []
-   
    nOverlays = 0
    
    colortable = None
    roi = None
+   
    
    def __init__(self, **kwargs):
        
@@ -93,8 +107,8 @@ class ImageDisplay(QLabel):
 
        if self.pmap is not None:
            
-           self.mouseX, self.mouseY = self.image_coords(event.x(), event.y())
-           if self.panning:
+           self.mouseX, self.mouseY = self.image_coords(event.x(), event.y()) 
+           if self.panning and self.is_mouse_on_image():
             
               newX, newY = self.mouseX, self.mouseY
               moveX = newX - self.panningX
@@ -106,16 +120,14 @@ class ImageDisplay(QLabel):
               self.panningX, self.panningY = self.image_coords(event.x(), event.y())
 
               self.set_image(self.currentImage)
-
-
-           if self.mouseX > 0 and self.mouseX < np.shape(self.currentImage)[1] and self.mouseY > 0 and self.mouseY < np.shape(self.currentImage)[0] :
-               self.mouseMoved.emit(self.mouseX, self.mouseY)
-               self.dragToX = self.mouseX
-               self.dragToY = self.mouseY
+           
+           if self.is_mouse_on_image():
+               closestX,closestY = self.image_coords_closest(event.x(), event.y()) #self.mouseMoved.emit(self.mouseX, self.mouseY)
+               self.dragToX = closestX
+               self.dragToY = closestY
            else:
                self.mouseX = None
                self.mouseY = None
-               
        self.update()     
            
           
@@ -124,11 +136,12 @@ class ImageDisplay(QLabel):
        if event.buttons() == QtCore.Qt.LeftButton and self.isRoiEnabled and self.mouseX is not None and self.mouseY is not None:
            self.dragging = True
            self.roi = None
-           self.dragX = self.mouseX
-           self.dragY = self.mouseY
+           self.dragX, self.dragY = self.image_coords_closest(event.x(), event.y()) #self.mouseMoved.emit(self.mouseX, self.mouseY)
+           #self.dragX = closestX
+           #self.dragY = closestY
            self.dragToX = self.dragX
            self.dragToY = self.dragY
-       elif event.buttons() == QtCore.Qt.MidButton or event.buttons() == QtCore.Qt.RightButton:
+       elif (event.buttons() == QtCore.Qt.MidButton or event.buttons() == QtCore.Qt.RightButton) and self.is_mouse_on_image():
            self.panning = True
            self.panningX, self.panningY = (self.mouseX, self.mouseY)
        
@@ -137,7 +150,7 @@ class ImageDisplay(QLabel):
        """ End of ROI dragging """  
        if self.dragging:
            self.dragging = False
-           if self.dragX != self.dragToX or self.dragY != self.dragToY:
+           if self.dragX != self.dragToX and self.dragY != self.dragToY:
                self.roi = int(round(min(self.dragX, self.dragToX))), int(round(min(self.dragY, self.dragToY))), int(round(max(self.dragX, self.dragToX))), int(round(max(self.dragY, self.dragToY)))
            else:
                self.roi = None
@@ -146,13 +159,23 @@ class ImageDisplay(QLabel):
        
    def wheelEvent(self,event):
        """ Updates zoom level when mouse wheel is scrolled"""
-       if self.isZoomEnabled:
-           self.zoomLocation = (self.mouseX, self.mouseY)
-           self.zoomLevel = round(self.zoomLevel + event.angleDelta().y() / 120)
+       if self.isZoomEnabled and self.mouseX:
+           self.zoomLocation = (self.mouseX, self.mouseY)           
+           event.angleDelta().y()
+           self.zoomLevel = self.zoomLevel + round(event.angleDelta().y() / 120) / self.zoomStepDivider
            self.zoomLevel = max(self.zoomLevel, 0)
-           
            self.set_image(self.currentImage)
+  
            
+   def is_mouse_on_image(self):
+       """ Returns True if mouse if over image"""
+       if self.mouseX is None or self.mouseY is None:
+           return False
+       if self.mouseX >=0 and self.mouseY >=0 and self.mouseX < self.imageSize[1] and self.mouseY < self.imageSize[0]:
+           return True
+       else:
+           return False
+       
        
    def set_image(self,img):
        """ Sets the image `img` as the current image. `img` is a numpy array, if
@@ -240,26 +263,36 @@ class ImageDisplay(QLabel):
        
        
    def zoom(self, img):
+        """ Returns a zoomed version of the image for display.
+        """
 
         if self.isZoomEnabled and self.zoomLevel > 0:               
+            
             scaleFactor = 2**self.zoomLevel
-            shape = np.array(img.shape[0:1])
-           
+            
+            shape = np.array(img.shape)[0:2]
+          
+            # If we showing at least four pixels, calculate zoom
             if max(np.round(shape / (2**self.zoomLevel))) < 4:
-                self.zoomLevel = round(np.log2(max(shape)/4))
-            zoomShape = max(np.round(shape / (2**self.zoomLevel)))
+                self.zoomLevel = round( np.log2(max(shape)/4) * self.zoomStepDivider  ) / self.zoomStepDivider
+            zoomShape = np.round(shape / (2**self.zoomLevel))
             
-            self.displayW = int(zoomShape) 
-            self.displayH = int(zoomShape)    
+            aspectRatio = self.geometry().width() / self.geometry().height()      
             
-            
+            if aspectRatio > 1:
+                self.displayW = int(zoomShape[1]) 
+                self.displayH =  round(zoomShape[1] / aspectRatio  )
+            else:
+                self.displayH = int(zoomShape[0]) 
+                self.displayW = round(zoomShape[0] * aspectRatio  ) 
+           
             # Sets the current view position within the image based on the zoom
             # level and our scrolling position
             if self.zoomLocation is not None:
                 h,w = self.currentImage.shape[0:2]
                                 
-                self.displayX = int(round(self.zoomLocation[0] - zoomShape / 2))
-                self.displayY = int(round(self.zoomLocation[1] - zoomShape / 2))
+                self.displayX = int(round(self.zoomLocation[0] - zoomShape[0] / 2))
+                self.displayY = int(round(self.zoomLocation[1] - zoomShape[1] / 2))
                 self.displayX = min(max(self.displayX ,0), w - self.displayW)
                 self.displayY = min(max(self.displayY ,0), h - self.displayH)
                
@@ -303,7 +336,19 @@ class ImageDisplay(QLabel):
        
        
    def image_coords(self, x, y):
-       """ Convert screen co-ordinates to image co-ordinates """    
+       """ Convert screen co-ordinates to floor image co-ordinates """    
+
+       if self.currentImage is None or self.pmap is None:
+           return None, None
+       else:
+           xOffset, yOffset = self.screen_offsets()
+           imageX = math.floor( (x - xOffset) / (self.pmap.width()) * np.shape(self.displayImage)[1] + self.displayX)
+           imageY = math.floor( (y - yOffset) / (self.pmap.height()) * np.shape(self.displayImage)[0] + self.displayY)
+           return imageX, imageY
+   
+        
+   def image_coords_closest(self, x, y):
+       """ Convert screen co-ordinates to cloest image co-ordinates """    
 
        if self.currentImage is None or self.pmap is None:
            return None, None
@@ -315,7 +360,7 @@ class ImageDisplay(QLabel):
        
   
    def screen_offsets(self):  
-           """ Returns the x and y co-ordinates of the top left of the image relaative to Widget"""
+           """ Returns the x and y co-ordinates of the top left of the image relative to Widget"""
            xOffset = (self.width() - self.pmap.width())/ 2 
            yOffset = (self.height() - self.pmap.height())/ 2 
            return xOffset, yOffset
@@ -373,12 +418,24 @@ class ImageDisplay(QLabel):
                
                
        ##################### Draw dragging ROI    
-       if self.dragging:
+       if self.dragging and self.dragX != self.dragToX and self.dragY != self.dragToY:
            painter.setPen(QPen(Qt.red, 2, Qt.SolidLine))
-           startX, startY = self.screen_coords(self.dragX, self.dragY)
-           endX, endY = self.screen_coords(self.dragToX, self.dragToY)
-           if startX is not None and startY is not None and endX is not None and endY is not None:
-               painter.drawRect(startX, startY, endX- startX, endY- startY)
+           #startX, startY = self.screen_coords(self.dragX, self.dragY)
+           #endX, endY = self.screen_coords(self.dragToX, self.dragToY)
+           dragRoi = int(round(min(self.dragX, self.dragToX))), int(round(min(self.dragY, self.dragToY))), int(round(max(self.dragX, self.dragToX))), int(round(max(self.dragY, self.dragToY)))
+
+          # if startX is not None and startY is not None and endX is not None and endY is not None:
+               #painter.drawRect(startX, startY, endX - startX, endY - startY )
+           drawX, drawY = self.screen_coords(dragRoi[0], dragRoi[1])
+           endX, endY = self.screen_coords(dragRoi[2], dragRoi[3])
+           width = endX- drawX
+           height = endY - drawY
+           painter.setPen(self.roiDragContrastPen)
+           painter.drawRect(drawX, drawY, width + 1, height + 1)
+           painter.setPen(self.roiDragPen)
+           painter.drawRect(drawX, drawY, width + 1, height + 1)
+           
+                
            
            
        ##################### Draw active ROI 
@@ -387,19 +444,49 @@ class ImageDisplay(QLabel):
            endX, endY = self.screen_coords(self.roi[2], self.roi[3])
            width = endX- drawX
            height = endY - drawY
-           painter.setPen(QPen(Qt.green, 2, Qt.SolidLine))
-           painter.drawRect(drawX, drawY, width, height)
-           
-       
+           painter.setPen(self.roiContrastPen)
+           painter.drawRect(drawX, drawY, width + 1, height + 1)
+           painter.setPen(self.roiPen)
+           painter.drawRect(drawX, drawY, width + 1, height + 1)
+
+          
        # Stop clipping because now we want to draw status bar which is outside image
        painter.setClipRect(QRect(*self.screen_offsets(), self.screen_size()[0],100000))
+       
+       
+       ##################### Draw Zoom Indicator ############
+       if self.zoomLevel > 0 and self.isZoomIndicator:
+
+           painter.setPen(self.zoomIndicatorPen)
+           x = self.width() - (self.width() - self.pmap.width()) / 2 - self.zoomIndicatorOffsetX - self.zoomIndicatorWidth
+           y = (self.height() - self.pmap.height()) / 2 + self.zoomIndicatorOffsetY
+           w = self.zoomIndicatorWidth
+           h = self.imageSize[0] / self.imageSize[1] * w
+           
+           # Outer rect
+           painter.drawRect(x, y, w, h) 
+           
+           # Filled inner rect
+           x2 = round(self.displayX / self.imageSize[1] * (w- 2))
+           y2 = round(self.displayY / self.imageSize[0] * (h - 2))
+           w2 = round(self.displayW / self.imageSize[1] * (w - 2) + 1)
+           h2 = round(self.displayH / self.imageSize[0] * (h - 2) + 1)
+           w2 = min(w - x2, w2 - x2) + x2
+
+           h2 = min(h - y2, h2 - y2) + y2
+           
+           painter.setBrush(self.zoomIndicatorBrush)
+           painter.drawRect(x + x2, y + y2, w2, h2)  
+
+
+
+           
       
        ##################### Draw status bar 
        if self.isStatusBar and self.pmap is not None:
        
            font = painter.font()
            fm = QFontMetrics(font)
-           
            if self.mouseX is not None and self.mouseY is not None and self.currentImage is not None:
                try:
                    mX = str(round(self.mouseX))
@@ -420,7 +507,7 @@ class ImageDisplay(QLabel):
                mX = '-'
                mY = '-'
                cursorVal = '--'
-               
+                         
            if self.currentImage is not None:
                self.meanPixel = str(round(np.mean(self.currentImage),1))
                self.maxPixel = str(round(np.max(self.currentImage)))
@@ -437,16 +524,17 @@ class ImageDisplay(QLabel):
                self.roiMean = str(round(np.mean(roi),1))               
            
            if self.zoomLevel > 0:
-               text = str(2**int(self.zoomLevel)) + 'X '
+               text = str(round(2**(self.zoomLevel))) + 'X '
            else:
                text = ''
            text = text + '(' + mX + ',' + mY + ') = ' + cursorVal + ' | [' + self.minPixel + '-' + self.maxPixel + ', Mean: ' + self.meanPixel + ']'
            
            if self.roi is not None:
-               text = text + ' | [ROI: (' + str(self.roi[0]) + ',' + str(self.roi[1]) + ')-(' + str(self.roi[2]) + '-' + str(self.roi[3]) + '): ' + self.roiMin + '-' + self.roiMax + ', Mean: ' + self.roiMean + ']' 
+               text = text + ' | [ROI: (' + str(self.roi[0] ) + ',' + str(self.roi[1]) + ')-(' + str(self.roi[2] -1) + '-' + str(self.roi[3] -1) + '): ' + self.roiMin + '-' + self.roiMax + ', Mean: ' + self.roiMean + ']' 
             
-           elif self.dragging:    
-               text = text + ' | [ROI: (' + str(self.dragX) + ',' + str(self.dragY) + ')-(' + str(self.dragToX) + '-' + str(self.dragToY) + ')'
+           elif self.dragging and self.dragX != self.dragToX and self.dragY != self.dragToY:
+    
+               text = text + ' | [Dragging ROI: (' + str(dragRoi[0]) + ',' + str(dragRoi[1] ) + ')-(' + str(dragRoi[2] -1) + '-' + str(dragRoi[3] -1) + ') ]'
 
            xPos = (self.width() - self.pmap.width()) /2
            painter.setBrush(QBrush(Qt.white, Qt.SolidPattern))
@@ -532,14 +620,6 @@ class ImageDisplay(QLabel):
        self.autoScale = autoScale
        self.update()
        
-   
-   def set_scale_limit(self, scaleMin, scaleMax):
-       """ If autoscale is off, manually sets a dynamic range window. Pixels of scaleMin or less will be black, pixels of scaleMax or more will be white.
-       """
-       self.displayMax = scaleMax
-       self.displayMin = scaleMin
-       self.update()
-       
        
    def set_status_bar(self, isStatusBar):
        """ Set status bar visible (True) or hidden (False).
@@ -557,7 +637,14 @@ class ImageDisplay(QLabel):
        self.set_image(self.currentImage)
        self.update()
 
+   def set_zoom_indicator_enabled(self, isIndicatorEnabled):
+       """ Set whether the zoom indicator is shown (True) or not (False).
+       """
+       self.isZoomIndicator = isIndicatorEnabled
+       self.set_image(self.currentImage)
+       self.update()
        
+    
    def set_roi_enabled(self, isRoiEnabled):
        """ Set whether zoom using mouse wheel is possible (True) or not (False).
        """
@@ -586,6 +673,7 @@ class ImageDisplay(QLabel):
                self.colortable.append(QtGui.qRgb(lut[col,0],lut[col,1],lut[col,2]))
        self.update()
        
+       
    def set_display_range(self, lower, upper):
        """ Sets the intensity range used for display if set_auto_scale is False. Pixels
        of 'lower' or below will be mapped to 0, 'upper' and above to 255.
@@ -593,8 +681,24 @@ class ImageDisplay(QLabel):
        self.displayMin = lower
        self.displayMax = upper
        self.update()
+       
 
-
+   def get_display_range(self):
+       """ Gets the intensity range used for display if set_auto_scale is False. Return
+       a tuple of (lower, upper).
+       Pixels of 'lower' or below will be mapped to 0, 'upper' and above to 255.
+       """
+       return self.displayMin, self.displayMax
+   
+       
+   def set_zoom_step_divider(self, zoomDivider):
+       """ Sets the zoom step divider. A bigger value makes the amount zoomed
+       in by each mouse wheel step smaller.
+       """
+       if zoomDivider > 0:       
+           self.zoomStepDivider = zoomDivider
+           
+         
 class Overlay():
     """ Class to store details about an overlay"""
     

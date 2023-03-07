@@ -37,14 +37,14 @@ class ImageDisplayExample(QMainWindow):
     colourImageSource = "example_rgb.tif"
     
     # Will try to load this number of images
-    numImagesToLoad = 10
+    numImagesToLoad = 50
          
     # Gui display defaults
     imageDisplaySize = 300
     controlPanelSize = 220
     
     # Timer interval defualts (ms)
-    GUIupdateInterval = 50
+    GUIupdateInterval = 20
         
     currentImage = None
     imageBuffer = None
@@ -78,7 +78,7 @@ class ImageDisplayExample(QMainWindow):
         """ Asemble the GUI from Qt Widgets
         """
         
-        self.setWindowTitle('Image Display Example')       
+        self.setWindowTitle('ImageDisplayQT: Example')       
 
         self.layout = QHBoxLayout()
         self.layout.setSpacing(20) 
@@ -147,6 +147,11 @@ class ImageDisplayExample(QMainWindow):
         self.controlsLayout.addStretch()        
         
         self.controlsLayout.addWidget(label:=QLabel("Image by Antonio Guillen"))
+        
+        kentlogo = QLabel()
+        pixmap = QPixmap('../res/kent_logo_2.png')
+        kentlogo.setPixmap(pixmap)
+        self.controlsLayout.addWidget(kentlogo)
        
         self.layout.addLayout(self.controlsLayout)           
         app = QWidget()
@@ -155,6 +160,7 @@ class ImageDisplayExample(QMainWindow):
         # Set the central widget of the Window. Widget will expand
         # to take up all the space in the window by default.
         self.setCentralWidget(app)
+        
         
         
     def update_image_input(self):
@@ -220,9 +226,9 @@ class ImageDisplayExample(QMainWindow):
         # Overlays
         self.mainDisplay.clear_overlays()
         if self.showLineCheck.isChecked():
-            lineOverlay = self.mainDisplay.add_overlay(ImageDisplay.LINE, 140, 70, 130, 120, QPen(Qt.red, 2, Qt.SolidLine))
+            lineOverlay = self.mainDisplay.add_overlay(ImageDisplay.LINE, 240, 70, 130, 120, QPen(Qt.red, 2, Qt.SolidLine))
         if self.showRectangleCheck.isChecked():
-            rectOverlay = self.mainDisplay.add_overlay(ImageDisplay.RECTANGLE, 90, 100, 30, 40, QPen(Qt.blue, 2, Qt.SolidLine), None)
+            rectOverlay = self.mainDisplay.add_overlay(ImageDisplay.RECTANGLE, 90, 100, 200, 150, QPen(Qt.blue, 2, Qt.SolidLine), None)
         if self.showEllipseCheck.isChecked():
             ellipseOverlay = self.mainDisplay.add_overlay(ImageDisplay.ELLIPSE, 180, 70, 90, 90, QPen(Qt.green, 2, Qt.SolidLine), None)
         if self.showPointsCheck.isChecked():
@@ -231,7 +237,10 @@ class ImageDisplayExample(QMainWindow):
         if self.showTextCheck.isChecked():
             textOverlay = self.mainDisplay.add_overlay(ImageDisplay.TEXT, 180, 50, QPen(Qt.yellow, 2, Qt.SolidLine), "Example Label")
 
-
+        #### Examples of other options
+        # self.mainDisplay.set_zoom_indicator_enabled(False)
+        # self.mainDisplay.set_zoom_step_divider(3)
+        
     
     def handle_images(self):
         """ Called regularly by a timer to deal with input images. If a processor
@@ -252,26 +261,27 @@ if __name__ == '__main__':
     
    app=QApplication(sys.argv)
    app.setStyle("Fusion")
-
-   #Now use a palette to switch to dark colors:
+   
+   # Now use a palette to switch to dark colors:
    palette = QPalette()
    palette.setColor(QPalette.Window, QColor(53, 53, 53))
+   palette.setColor(QPalette.Window, QColor(0, 0, 0))
+
    palette.setColor(QPalette.WindowText, Qt.white)
-   palette.setColor(QPalette.Base, QColor(25, 25, 25))
+   palette.setColor(QPalette.Base, QColor(55, 45, 45))
    palette.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
    palette.setColor(QPalette.ToolTipBase, Qt.black)
    palette.setColor(QPalette.ToolTipText, Qt.white)
    palette.setColor(QPalette.Text, Qt.white)
    palette.setColor(QPalette.Button, QColor(53, 53, 53))
+   palette.setColor(QPalette.Button, QColor(63, 63, 63))
+
    palette.setColor(QPalette.ButtonText, Qt.white)
    palette.setColor(QPalette.BrightText, Qt.red)
    palette.setColor(QPalette.Link, QColor(42, 130, 218))
    palette.setColor(QPalette.Highlight, QColor(42, 130, 218))
    palette.setColor(QPalette.HighlightedText, Qt.black)
-   palette.setColor(QPalette.Disabled, QPalette.Light, Qt.black)
-   palette.setColor(QPalette.Disabled, QPalette.Shadow, QColor(12, 15, 16))
-   
-   app.setPalette(palette)  
+   app.setPalette(palette)
    
    window=ImageDisplayExample()
    window.show()
