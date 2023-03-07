@@ -7,7 +7,9 @@ only a few lines of code to be added to your GUI. It can display images at video
 
 It supports monochrome and colour (RGB) images, support for stacks is planned in future.
 
-Full documentation and pip install will be available soon.
+[Full documentation is available](https://imagedisplayqt.readthedocs.io/).
+
+Pip install will be available soon.
 
 It is developed mainly by [Mike Hughes](https://research.kent.ac.uk/applied-optics/hughes) 
 at the [Applied Optics Group](https://research.kent.ac.uk/applied-optics/), School of Physics and Astronomy, University of Kent. 
