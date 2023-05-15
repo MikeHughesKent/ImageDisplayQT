@@ -21,6 +21,7 @@ from PyQt5.QtGui import QPainter, QBrush, QPen, QFont, QFontMetrics
 import numpy as np
 from matplotlib import cm
 import math
+import time
 
 class ImageDisplay(QLabel):
     
@@ -78,6 +79,8 @@ class ImageDisplay(QLabel):
    
    colortable = None
    roi = None
+   
+   lastFrameTime = 0
    
    
    def __init__(self, **kwargs):
@@ -185,7 +188,7 @@ class ImageDisplay(QLabel):
        """ Sets the image `img` as the current image. `img` is a numpy array, if
        it has three dimensions then it is assumed that it is a colour images, and
        if it has two dimensions then it is assumed that is is a monochrome image."""
-       
+      
        if img.ndim > 2:
            self.set_rgb_image(img)
        else:
@@ -392,7 +395,8 @@ class ImageDisplay(QLabel):
 
    def draw(self):
        """ This is where the whole thing is drawn"""       
-       
+
+       self.lastFrameTime = time.perf_counter()
        painter = QPainter(self)
        
        # Prevent drawing outside of image

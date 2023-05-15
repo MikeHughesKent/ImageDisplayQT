@@ -15,6 +15,7 @@ import os
 
 import numpy as np
 from PIL import Image
+from pathlib import Path
 
 from PyQt5 import QtGui, QtCore, QtWidgets  
 from PyQt5.QtWidgets import *
@@ -23,7 +24,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import QPalette, QColor, QImage, QPixmap, QPainter, QPen, QGuiApplication
 from PyQt5.QtGui import QPainter, QBrush, QPen
 
-sys.path.append(os.path.abspath("..\\src"))
+sys.path.append(os.path.abspath("../src"))
 from image_display import ImageDisplay
 
 
@@ -44,7 +45,7 @@ class ImageDisplayExample(QMainWindow):
     controlPanelSize = 220
     
     # Timer interval defualts (ms)
-    GUIupdateInterval = 20
+    GUIupdateInterval = 1
         
     currentImage = None
     imageBuffer = None
