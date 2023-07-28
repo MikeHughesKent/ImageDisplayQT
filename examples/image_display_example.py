@@ -2,9 +2,7 @@
 """
 Example QT GUI Showing use of ImageDisplayQT Widget.
 
-@author: Mike Hughes
-Applied Optics Group
-University of Kent
+@author: Mike Hughes, Applied Optics Group, Physics & Astronomy, University of Kent
 
 Test videos by Antonio Guillén, https://www.youtube.com/watch?v=oxbhASDZeyk (Creative Commons by Attribution)
 
