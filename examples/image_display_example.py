@@ -43,7 +43,7 @@ class ImageDisplayExample(QMainWindow):
     controlPanelSize = 220
     
     # Timer interval defualts (ms)
-    GUIupdateInterval = 1
+    GUIupdateInterval = 20
         
     currentImage = None
     imageBuffer = None

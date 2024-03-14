@@ -35,6 +35,7 @@ class ImageDisplay(QLabel):
   
    MONO = 0
    RGB = 1
+   GRAPH = 2
     
    mouseMoved = pyqtSignal(int, int)
 
@@ -55,7 +56,11 @@ class ImageDisplay(QLabel):
    dragToY = None
    imageWidth = None
    imageHeight = None
-
+   
+   
+   graph_line_width = 5
+   graph_width = 512
+   graph_height = 512
    displayMin = 0
    displayMax = 255
    zoomLevel = 0
@@ -75,6 +80,14 @@ class ImageDisplay(QLabel):
    statusPen =  QPen(Qt.white, 2, Qt.SolidLine)
    statusBrush = QBrush(Qt.white, Qt.SolidPattern)
    statusTextPen = QPen(Qt.black, 2, Qt.SolidLine)
+   
+   graphCursorBrush = QBrush(Qt.white, Qt.SolidPattern)
+   graphCursorPen = QPen(Qt.white, 2, Qt.SolidLine)
+   graphCursorSize = 4
+   graph_label_pen = QPen(Qt.white, 2, Qt.SolidLine)
+   graph_zero_pen = QPen(Qt.white, 1, Qt.DotLine)
+   graph_display_min = None
+   graph_display_max = None
    
    imageMode = MONO
    
@@ -124,6 +137,8 @@ class ImageDisplay(QLabel):
        if self.pmap is not None:
            
            self.mouseX, self.mouseY = self.image_coords(event.x(), event.y()) 
+           #print(f"Mouse Moved to: {event.x()}, {event.y()} : {self.mouseX}, {self.mouseY}")
+
            if self.panning and self.is_mouse_on_image():
             
               newX, newY = self.mouseX, self.mouseY
@@ -175,9 +190,11 @@ class ImageDisplay(QLabel):
        
    def wheelEvent(self,event):
        """ Updates zoom level when mouse wheel is scrolled"""
+       if self.imageMode == self.GRAPH:
+           self.zoomLevel = 0
+           return
        if self.isZoomEnabled and self.mouseX:
            self.zoomLocation = (self.mouseX, self.mouseY)           
-           event.angleDelta().y()
            self.zoomLevel = self.zoomLevel + round(event.angleDelta().y() / 120) / self.zoomStepDivider
            self.zoomLevel = max(self.zoomLevel, 0)
            self.set_image(self.currentImage)
@@ -193,6 +210,20 @@ class ImageDisplay(QLabel):
            return True
        else:
            return False
+       
+        
+   def set_graph(self, graph):
+       self.graphData = graph       
+       
+       img = np.zeros((self.graph_width, self.graph_height))
+       self.set_image(img)
+       
+       self.imageMode = self.GRAPH
+       self.zoomLevel = 0
+
+
+
+       
        
        
    def set_image(self,img):
@@ -327,17 +358,21 @@ class ImageDisplay(QLabel):
             # If we showing at least four pixels, calculate zoom
             if max(np.round(shape / (2**self.zoomLevel))) < 4:
                 self.zoomLevel = round( np.log2(max(shape)/4) * self.zoomStepDivider  ) / self.zoomStepDivider
+            
             zoomShape = np.round(shape / (2**self.zoomLevel))
             
-            aspectRatio = self.geometry().width() / self.geometry().height()      
+            imageAspectRatio = np.shape(img)[1]/np.shape(img)[0]
+            aspectRatio = self.geometry().width() / self.geometry().height() 
             
-            if aspectRatio > 1:
+            
+            if imageAspectRatio > aspectRatio:
                 self.displayW = int(zoomShape[1]) 
-                self.displayH =  round(zoomShape[1] / aspectRatio  )
+                self.displayH =  min(shape[0], int(round(self.displayW / aspectRatio)))
+     
             else:
                 self.displayH = int(zoomShape[0]) 
-                self.displayW = round(zoomShape[0] * aspectRatio  ) 
-           
+                self.displayW = min(shape[1], int(round(self.displayH * aspectRatio))) 
+
             # Sets the current view position within the image based on the zoom
             # level and our scrolling position
             if self.zoomLocation is not None:
@@ -431,9 +466,9 @@ class ImageDisplay(QLabel):
        
         
    def paintEvent(self, event):
-       """ Handles drawing of widget, including labels, overlays etc.
-       """
+       """ Handles drawing of widget, including labels, overlays etc.     """
        
+
        super().paintEvent(event)
        self.draw()
 
@@ -446,7 +481,61 @@ class ImageDisplay(QLabel):
        
        # Prevent drawing outside of image
        painter.setClipRect(QRect(*self.screen_offsets(), *self.screen_size() ))
-       
+
+       if self.imageMode == self.GRAPH:
+
+           if self.graphData is not None:
+               num_points = np.shape(self.graphData)[0]  
+                 
+               max_val = np.max(self.graphData)
+               min_val = np.min(self.graphData)
+               
+               if self.graph_display_min is None:
+                   graphMin = min_val
+               else:
+                   graphMin = self.graph_display_min
+               
+               if self.graph_display_max is None:
+                   graphMax = max_val
+               else:
+                   graphMax = self.graph_display_max
+               plotX = np.linspace(0, self.graph_width, num_points)
+               plotY = self.graph_height - (self.graphData - graphMin) / ( graphMax - graphMin) * self.graph_height
+    
+               for i in range(num_points - 1):
+               
+                   x,y = self.screen_coords(plotX[i],plotY[i])
+                   x2,y2 = self.screen_coords(plotX[i + 1],plotY[i+1])
+                   painter.drawLine(x,y,x2,y2)
+                   
+           font = painter.font()
+           fm = QFontMetrics(font)        
+           painter.setPen(self.graph_label_pen)
+           prec = 3
+           
+           
+           # Max val
+           x,y = self.screen_coords(0,0)
+           painter.drawText(x + 4, y + fm.height(), str(round(graphMax,prec)))
+           painter.drawLine(x,y,x + 20,y) 
+           
+           # Min Val
+           x,y = self.screen_coords(0,self.graph_height)
+           painter.drawText(x + 4, y - fm.height(), str(round(graphMin,prec)))
+           painter.drawLine(x,y,x + 20,y) 
+           
+           
+           # Zero Line
+           if graphMax > 0 and graphMin < 0:
+               painter.setPen(self.graph_zero_pen)
+
+               x,y = self.screen_coords(0, self.graph_height - (0 - graphMin) / ( graphMax - graphMin) * self.graph_height)
+               painter.drawLine(x,y,x + 100000,y) 
+               
+           
+           #painter.drawLine(x,y, x,y+1000) 
+
+            
        #################### Draw overlays
        for overlay in self.overlays:
            
@@ -509,11 +598,18 @@ class ImageDisplay(QLabel):
        if self.zoomLevel > 0 and self.isZoomIndicator:
 
            painter.setPen(self.zoomIndicatorPen)
-           x = self.width() - (self.width() - self.pmap.width()) / 2 - self.zoomIndicatorOffsetX - self.zoomIndicatorWidth
-           y = (self.height() - self.pmap.height()) / 2 + self.zoomIndicatorOffsetY
-           w = self.zoomIndicatorWidth
-           h = self.imageSize[0] / self.imageSize[1] * w
            
+           if self.imageHeight < self.imageWidth:
+               x = self.width() - (self.width() - self.pmap.width()) / 2 - self.zoomIndicatorOffsetX - self.zoomIndicatorWidth
+               y = (self.height() - self.pmap.height()) / 2 + self.zoomIndicatorOffsetY
+               w = self.zoomIndicatorWidth
+               h = self.imageSize[0] / self.imageSize[1] * w
+           else:
+               x = self.width() - (self.width() - self.pmap.width()) / 2 - self.zoomIndicatorOffsetX 
+               y = (self.height() - self.pmap.height()) / 2 + self.zoomIndicatorOffsetY
+               h = self.zoomIndicatorWidth
+               w = self.imageSize[1] / self.imageSize[0] * h
+               
            # Outer rect
            painter.drawRect(int(x), int(y), int(w), int(h)) 
            
@@ -524,6 +620,7 @@ class ImageDisplay(QLabel):
            h2 = round(self.displayH / self.imageSize[0] * (h - 2) + 1)
            w2 = min(w - x2, w2 - x2) + x2
            h2 = min(h - y2, h2 - y2) + y2
+         
            painter.setBrush(self.zoomIndicatorBrush)
            painter.drawRect(int(x + x2), int(y + y2), int(w2), int(h2))  
 
@@ -546,6 +643,7 @@ class ImageDisplay(QLabel):
                        cursorVal = str(int(round(self.currentImage[round(self.mouseY), round(self.mouseX),0],0))) \
                                    + "," + str(int(round(self.currentImage[round(self.mouseY), round(self.mouseX),1],0))) \
                                    + "," + str(int(round(self.currentImage[round(self.mouseY), round(self.mouseX),2],0)))
+                  
                    else:
                        cursorVal = '--'
                except:
@@ -576,14 +674,29 @@ class ImageDisplay(QLabel):
                text = str(round(2**(self.zoomLevel))) + 'X '
            else:
                text = ''
-           text = text + '(' + mX + ',' + mY + ') = ' + cursorVal + ' | [' + self.minPixel + '-' + self.maxPixel + ', Mean: ' + self.meanPixel + ']'
+               
+           if self.imageMode is not self.GRAPH:    
+               text = text + '(' + mX + ',' + mY + ') = ' + cursorVal + ' | [' + self.minPixel + '-' + self.maxPixel + ', Mean: ' + self.meanPixel + ']'
            
-           if self.roi is not None:
-               text = text + ' | [ROI: (' + str(self.roi[0] ) + ',' + str(self.roi[1]) + ')-(' + str(self.roi[2] -1) + '-' + str(self.roi[3] -1) + '): ' + self.roiMin + '-' + self.roiMax + ', Mean: ' + self.roiMean + ']' 
+               if self.roi is not None:
+                   text = text + ' | [ROI: (' + str(self.roi[0] ) + ',' + str(self.roi[1]) + ')-(' + str(self.roi[2] -1) + '-' + str(self.roi[3] -1) + '): ' + self.roiMin + '-' + self.roiMax + ', Mean: ' + self.roiMean + ']' 
             
-           elif self.dragging and self.dragX != self.dragToX and self.dragY != self.dragToY:
+               elif self.dragging and self.dragX != self.dragToX and self.dragY != self.dragToY:
+                   text = text + ' | [Dragging ROI: (' + str(dragRoi[0]) + ',' + str(dragRoi[1] ) + ')-(' + str(dragRoi[2] -1) + '-' + str(dragRoi[3] -1) + ') ]'
+           else: #GRAPH
+               if self.mouseX is not None and self.mouseY is not None:
+                   xP =  str(round(int(self.mouseX / self.graph_width * num_points) ))
+                   yP =  str(round(self.graphData[int(self.mouseX / self.graph_width * num_points) ],3))
     
-               text = text + ' | [Dragging ROI: (' + str(dragRoi[0]) + ',' + str(dragRoi[1] ) + ')-(' + str(dragRoi[2] -1) + '-' + str(dragRoi[3] -1) + ') ]'
+                   prec = 3
+                   text = text + '(' + xP + ',' + yP + ') | [' + str(round(np.min(self.graphData),prec)) + ' -> ' + str(round(np.max(self.graphData),prec)) + ', Mean: ' + str(round(np.mean(self.graphData),prec)) + ']'
+                    
+                   x,y = self.screen_coords(self.mouseX,plotY[int(self.mouseX* num_points / self.graph_width)])
+                   painter.setBrush(self.graphCursorBrush)
+                   painter.setPen(self.graphCursorPen)
+                   painter.drawEllipse(x-self.graphCursorSize,y -self.graphCursorSize, self.graphCursorSize * 2,self.graphCursorSize *2)
+
+
 
            xPos = int(round((self.width() - self.pmap.width()) /2))
            painter.setBrush(self.statusBrush)
