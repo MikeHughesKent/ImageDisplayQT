@@ -1,3 +1,4 @@
+
 Getting Started
 ===============
 
@@ -46,4 +47,3 @@ If autoscale is set to ``False`` then no mapping will occur by default, the inpu
     imDisplay.set_display_range(min, max)
 
 Where image pixel values of ``min`` and below will be mapped to 0, and ``max`` and above to 255.   
-

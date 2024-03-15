@@ -43,7 +43,7 @@ class ImageDisplayExample(QMainWindow):
     controlPanelSize = 220
     
     # Timer interval defualts (ms)
-    GUIupdateInterval = 20
+    GUIupdateInterval = 33
         
     currentImage = None
     imageBuffer = None
@@ -235,7 +235,7 @@ class ImageDisplayExample(QMainWindow):
         if self.showTextCheck.isChecked():
             textOverlay = self.mainDisplay.add_overlay(ImageDisplay.TEXT, 180, 50, QPen(Qt.yellow, 2, Qt.SolidLine), "Example Label")
 
-        #### Examples of other options
+        # Examples of other options
         # self.mainDisplay.set_zoom_indicator_enabled(False)
         # self.mainDisplay.set_zoom_step_divider(3)
         # self.mainDisplay.statusPen = QPen(Qt.blue, 1, Qt.SolidLine)

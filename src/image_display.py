@@ -81,13 +81,14 @@ class ImageDisplay(QLabel):
    statusBrush = QBrush(Qt.white, Qt.SolidPattern)
    statusTextPen = QPen(Qt.black, 2, Qt.SolidLine)
    
+   graphPen = QPen(Qt.white, 1, Qt.SolidLine)
    graphCursorBrush = QBrush(Qt.white, Qt.SolidPattern)
    graphCursorPen = QPen(Qt.white, 2, Qt.SolidLine)
    graphCursorSize = 4
-   graph_label_pen = QPen(Qt.white, 2, Qt.SolidLine)
-   graph_zero_pen = QPen(Qt.white, 1, Qt.DotLine)
-   graph_display_min = None
-   graph_display_max = None
+   graphLabelPen = QPen(Qt.white, 2, Qt.SolidLine)
+   graphZeroPen = QPen(Qt.white, 1, Qt.DotLine)
+   graphDisplayMin = None
+   graphDisplayMax = None
    
    imageMode = MONO
    
@@ -490,18 +491,20 @@ class ImageDisplay(QLabel):
                max_val = np.max(self.graphData)
                min_val = np.min(self.graphData)
                
-               if self.graph_display_min is None:
+               if self.graphDisplayMin is None:
                    graphMin = min_val
                else:
-                   graphMin = self.graph_display_min
+                   graphMin = self.graphDisplayMin
                
-               if self.graph_display_max is None:
+               if self.graphDisplayMax is None:
                    graphMax = max_val
                else:
-                   graphMax = self.graph_display_max
+                   graphMax = self.graphDisplayMax
                plotX = np.linspace(0, self.graph_width, num_points)
                plotY = self.graph_height - (self.graphData - graphMin) / ( graphMax - graphMin) * self.graph_height
-    
+              
+               painter.setPen(self.graphPen)
+
                for i in range(num_points - 1):
                
                    x,y = self.screen_coords(plotX[i],plotY[i])
@@ -510,7 +513,7 @@ class ImageDisplay(QLabel):
                    
            font = painter.font()
            fm = QFontMetrics(font)        
-           painter.setPen(self.graph_label_pen)
+           painter.setPen(self.graphLabelPen)
            prec = 3
            
            
@@ -527,7 +530,7 @@ class ImageDisplay(QLabel):
            
            # Zero Line
            if graphMax > 0 and graphMin < 0:
-               painter.setPen(self.graph_zero_pen)
+               painter.setPen(self.graphZeroPen)
 
                x,y = self.screen_coords(0, self.graph_height - (0 - graphMin) / ( graphMax - graphMin) * self.graph_height)
                painter.drawLine(x,y,x + 100000,y) 

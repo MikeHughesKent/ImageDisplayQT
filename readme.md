@@ -1,11 +1,12 @@
 # ImageDisplayQT
-ImageDisplayQT is a PyQT widget for displaying live images in GUIs. It was orignially developed for scientific imaging applications, with features including zoom, 
+ImageDisplayQT is a PyQT widget for displaying live images in GUIs. It was developed for scientific imaging applications, with features including zoom, 
 pixel inspection, autoscaling, region of interest with live mean display, and the ability to add persistent overlays. 
 
 It is lightweight and simple to use, requiring 
 only a few lines of code to be added to your GUI. It can display images at video rate on modest hardware.
 
-It supports monochrome and colour (RGB) images, support for stacks is planned in future.
+It currently supports monochrome and colour (RGB) images stored as 2D and 3D numpy arrays. 1D array data can also
+be displayed as a simple line graph.
 
 [Full documentation is available](https://imagedisplayqt.readthedocs.io/).
 
@@ -35,7 +36,7 @@ To update the image, call:
 imDisplay.set_image(img)
 ```
 
- where `img` is a 2D numpy array containing a monochrome image or a 3D numpy array containing a colour (RGB) image.
+where `img` is a 2D numpy array containing a monochrome image or a 3D numpy array containing a colour (RGB) image.
 
 Toggle the status bar visibility using:
 
