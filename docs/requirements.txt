@@ -2,5 +2,6 @@ matplotlib>=3.3.4
 numpy>=1.18
 Pillow>=9.3.0
 PyQT5>=5.15.0
+sphinx-rtd-theme==1.2.2
 
 
